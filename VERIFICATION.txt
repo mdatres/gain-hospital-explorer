@@ -1,0 +1,24 @@
+Verification completed 21 October 2026
+
+Passed: eight Node model tests; JavaScript syntax checks.
+Passed: 16 official state counts reconcile to 1,841. Bayern + Sachsen = 423.
+Passed: hardware-only and hardware + electricity selector.
+Passed: zero hospitals and all-Germany boundary; selected-state total action.
+Passed: editing model inputs and resetting example values.
+Passed: 1024 × 1366 tablet controller layout, no horizontal overflow.
+Passed: 1920 × 1080 presentation fits in one viewport.
+Passed: same-browser synchronization.
+Passed: real PeerJS connection between separate browser origins (localhost
+and 127.0.0.1), which do not share BroadcastChannel or local storage.
+Passed: hospital count, states, cost mode and model edits propagate remotely.
+Passed: reconnect after page reload.
+Passed: SVG chart downloaded with current inputs and methodology note.
+No browser errors/warnings in the final checked presentation session.
+
+Not tested: physical iPad/Safari, external projector hardware, restrictive
+hospital networks, GitHub's production hosting (no repository supplied).
+Cost inputs are illustrative; no measured setup benchmark was available.
+
+Standalone OPEN-DEMO.html: embedded module syntax checked. Direct file
+preview could not be browser-tested because the in-app browser permits
+HTTP/HTTPS addresses only. The modular site was browser-tested over HTTP.
