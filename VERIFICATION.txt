@@ -1,24 +1,21 @@
-Verification completed 21 October 2026
+Simplified interface verified 21 October 2026
 
-Passed: eight Node model tests; JavaScript syntax checks.
-Passed: 16 official state counts reconcile to 1,841. Bayern + Sachsen = 423.
-Passed: hardware-only and hardware + electricity selector.
-Passed: zero hospitals and all-Germany boundary; selected-state total action.
-Passed: editing model inputs and resetting example values.
-Passed: 1024 × 1366 tablet controller layout, no horizontal overflow.
-Passed: 1920 × 1080 presentation fits in one viewport.
-Passed: same-browser synchronization.
-Passed: real PeerJS connection between separate browser origins (localhost
-and 127.0.0.1), which do not share BroadcastChannel or local storage.
-Passed: hospital count, states, cost mode and model edits propagate remotely.
-Passed: reconnect after page reload.
-Passed: SVG chart downloaded with current inputs and methodology note.
-No browser errors/warnings in the final checked presentation session.
+Passed: all eight existing model tests and JavaScript syntax check.
+Passed: gAIn setup and Saving labels; removed introductory titles, navigation,
+connection badge, download/fullscreen controls and repeated scenario banner.
+Passed: presentation toggle enters chart-only view and returns to controls.
+Passed: iPad controller shows controls only, with a 1–20 year slider.
+Passed: Bayern + Sachsen = 423; adding Berlin gives 509.
+Passed: all-Germany toggle selects 16 states / 1,841 hospitals; toggle off clears.
+Passed: More states reveals the other 14 states and keeps quick selections.
+Passed: hardware-only mode hides time controls and excludes electricity costs.
+Passed: 1024 x 1366 controller fits with no horizontal overflow.
+Passed: 1280 x 720 presentation and cost cards fit in one viewport.
+Passed: same-browser synchronization; PeerJS connection reports connected.
+Passed: real cross-origin WebRTC synchronization (localhost to 127.0.0.1),
+including time-horizon and hospital-slider changes.
+Passed: no browser errors or warnings in the checked presentation session.
 
-Not tested: physical iPad/Safari, external projector hardware, restrictive
-hospital networks, GitHub's production hosting (no repository supplied).
-Cost inputs are illustrative; no measured setup benchmark was available.
-
-Standalone OPEN-DEMO.html: embedded module syntax checked. Direct file
-preview could not be browser-tested because the in-app browser permits
-HTTP/HTTPS addresses only. The modular site was browser-tested over HTTP.
+Cost formulas and published data sources are unchanged. No measured cost or
+power benchmark was supplied; all initial cost/power values remain illustrative.
+Not tested: physical iPad/Safari, projector hardware, restrictive hospital networks.

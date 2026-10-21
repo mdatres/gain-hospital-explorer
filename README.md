@@ -7,11 +7,13 @@ iPad controller, and presentation screen. Open [the live website](https://mdatre
 
 - Official gAIn logo, responsive layouts and touch controls.
 - Hospital-count slider and numeric input from 0 to 1,841.
-- Quantized versus RTX 3050 setup cost curves, intersection labels, and projections to the axes.
+- gAIn versus RTX 3050 setup cost curves, intersection labels, and projections to the axes.
 - Hardware-only and hardware-plus-electricity modes.
 - All 16 German states, with a separate sum marker and an explicit “Use this total” action.
 - Editable hardware, average power, usage hours, energy price, years and setups per hospital.
-- SVG chart download including a methodology note and current inputs.
+- A single Presentation mode button and a large, uncluttered chart.
+- Time-horizon slider (1–20 years), with Bayern / Sachsen / All Germany shortcuts
+  and the other 14 states under More states.
 - Local same-browser synchronization and cross-device PeerJS/WebRTC pairing.
 - Source and methodology panel; no analytics and no patient data.
 
@@ -46,7 +48,7 @@ operating hours, deployment/integration, staffing, maintenance, replacements,
 financing and price changes. Tax treatment follows the input prices. Equal useful
 workloads and equivalent capability are assumptions, not verified findings.
 
-Defaults: quantized setup €250 and 15 W; RTX setup €750 and 130 W; one setup per
+Defaults: gAIn setup €250 and 15 W; RTX setup €750 and 130 W; one setup per
 hospital; 8 h/day, 3 years, €0.30/kWh; 400 hospitals. These yield €115,768 and
 €436,656 respectively. Hardware-only costs are €100,000 and €300,000.
 
@@ -66,11 +68,15 @@ static filenames also work through GitHub's default branch publishing.
 
 ## Pairing and availability
 
-- On the display: choose Presentation → Connect screens. Scan the QR on the iPad.
+- For first-time pairing, open `?view=display&setup=1` on the large screen, wait
+  for Room ready, and scan the QR on the iPad. Close the setup dialog to present.
+- The main interface has no connection controls or status badge. Existing room
+  links reconnect automatically. Presentation mode switches the current window
+  to the large chart; Exit presentation returns to its controls.
 - The URL fragment carries only an ephemeral room code, not cost inputs.
 - [PeerJS](https://peerjs.com/client/getting-started) 1.5.5 uses the public
   PeerServer Cloud for signalling. Scenario data is exchanged over WebRTC.
-- A connection status indicates whether screens are actually connected. Keep
+- Connection status and retry controls remain in the optional setup dialog. Keep
   both tabs awake. “Retry connection” restarts failed pairing. Rejoining gets the
   host's current scenario.
 - Restrictive NAT/firewalls can prevent WebRTC connections. No managed TURN
@@ -102,6 +108,11 @@ The gAIn mark is not licensed as part of those libraries.
 
 ## Using the live site
 
-Open [Presentation](https://mdatres.github.io/gain-hospital-explorer/?view=display) on the large screen. Click **Connect screens**, wait for **Room ready**, and scan the QR code with the iPad. The iPad opens the controller and joins that room. Keep both pages open.
+Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the large screen. Wait for **Room ready** and scan the QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
+
+The iPad shows only the deployment controls. State selections add a separate
+vertical marker; **Use this total** also sets the chosen deployment count.
+**Saving** is RTX 3050 cost minus gAIn cost, so a negative number means the gAIn
+scenario costs more. All cost inputs remain illustrative and editable.
 
 The static files are kept at the repository root for browser-based uploads. The logo, favicon and bundled libraries are adjacent to `index.html`; no build or installation is needed.

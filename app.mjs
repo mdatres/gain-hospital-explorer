@@ -30,16 +30,12 @@ function acceptState(packet, viaLocal = false, except) {
   sendRemote(safe, except);
 }
 
-$('state-list').innerHTML = STATES.map(([id, label, count]) => `<label class="state-option"><input type="checkbox" value="${id}"><span class="state-name">${label}</span><span class="state-count">${number(count)}</span></label>`).join('');
+$('state-list').innerHTML = STATES.filter(([id]) => !['BY', 'SN'].includes(id)).map(([id, label, count]) => `<label class="state-option"><input type="checkbox" value="${id}"><span class="state-name">${label}</span><span class="state-count">${number(count)}</span></label>`).join('');
 
 function toast(message) { clearTimeout(toastTimer); $('toast').textContent = message; $('toast').hidden = false; toastTimer = setTimeout(() => $('toast').hidden = true, 4300); }
 function storageSave() { try { localStorage.setItem(`gain-scenario-${room}`, JSON.stringify(state)); } catch {} }
 function postLocal(type, payload = {}) { channel?.postMessage({ type, ...payload, tabId }); }
 function refreshStatus() {
-  const local = Date.now() - lastLocalSeen < 6500;
-  const label = remoteConnected ? 'Screens connected' : local ? 'Same-browser sync' : remoteActive ? peerStateMessage : 'Standalone';
-  $('connection-status').classList.toggle('connected', remoteConnected || local);
-  $('connection-status').innerHTML = `<i></i>${esc(label)}`;
   $('pair-status').textContent = remoteConnected ? 'Connected. Changes update the other screen live.' : peerStateMessage;
 }
 function startLocalChannel() {
@@ -65,7 +61,8 @@ function update(changes) { state = sanitize({ ...state, ...changes }); storageSa
 function scheduleRender() { if (!renderFrame) renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); }); }
 function setView(next) {
   view = next; document.body.dataset.view = view;
-  document.querySelectorAll('[data-view]').forEach(button => { if (button.tagName === 'BUTTON') { if (button.dataset.view === view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); } });
+  $('presentation-button').innerHTML = view === 'display' ? '<span aria-hidden="true">↙</span> Exit presentation' : 'Presentation mode <span aria-hidden="true">↗</span>';
+  $('presentation-button').setAttribute('aria-pressed', String(view === 'display'));
   const url = new URL(location.href); url.searchParams.set('view', view); if (!url.hash) url.hash = `room=${room}`; history.replaceState(null, '', url);
   document.title = `gAIn — ${view === 'controller' ? 'iPad controller' : view === 'display' ? 'Live cost projection' : 'Hospital deployment explorer'}`;
   scheduleRender();
@@ -77,6 +74,14 @@ function render() {
   $('hospital-slider').style.background = `linear-gradient(to right,var(--purple) ${state.hospitals / TOTAL * 100}%,#e9e8f0 ${state.hospitals / TOTAL * 100}%)`;
   $('hospital-slider').setAttribute('aria-valuetext', `${number(state.hospitals)} hospitals`);
   $('cost-mode').value = state.mode; inputValue('years', state.years); $('time-controls').hidden = state.mode === 'hardware';
+  $('years-value').textContent = `${state.years} ${state.years === 1 ? 'year' : 'years'}`;
+  $('years').setAttribute('aria-valuetext', $('years-value').textContent);
+  $('years').style.background = `linear-gradient(to right,var(--purple) ${(state.years - 1) / 19 * 100}%,#e9e8f0 ${(state.years - 1) / 19 * 100}%)`;
+  document.querySelectorAll('[data-state]').forEach(b => b.setAttribute('aria-pressed', String(state.selected.includes(b.dataset.state))));
+  $('select-all').setAttribute('aria-pressed', String(state.selected.length === STATES.length));
+  $('region-summary').hidden = !state.selected.length;
+  const otherCount = state.selected.filter(id => !['BY', 'SN'].includes(id)).length;
+  $('more-count').textContent = otherCount ? `${otherCount} selected` : '';
   document.querySelectorAll('[data-count]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.count) === state.hospitals)));
   document.querySelectorAll('.state-option input').forEach(el => el.checked = state.selected.includes(el.value));
   $('region-total').textContent = number(sum); $('region-count').textContent = `${state.selected.length} ${state.selected.length === 1 ? 'state' : 'states'}`;
@@ -84,27 +89,18 @@ function render() {
   $('region-legend').hidden = !state.selected.length;
   $('quant-cost').textContent = money(c.quant); $('rtx-cost').textContent = money(c.rtx);
   $('quant-per').textContent = `${money(per.quant)} per hospital`; $('rtx-per').textContent = `${money(per.rtx)} per hospital`;
-  $('saving-cost').textContent = money(Math.abs(c.difference));
-  $('saving-percent').textContent = c.percent === null ? 'No RTX 3050 baseline cost' : Math.abs(c.percent) < 0.005 ? 'Equal costs in this scenario' : `${Math.abs(c.percent).toFixed(1)}% ${c.difference >= 0 ? 'lower' : 'higher'} for the quantized setup`;
-  $('difference-label').textContent = c.difference >= 0 ? 'MODELLED DIFFERENCE' : 'QUANTIZED COST PREMIUM';
-  $('selected-caption').textContent = `${number(state.hospitals)} hospitals`; $('focus-count').textContent = number(state.hospitals);
+  $('saving-cost').textContent = money(c.difference);
+  $('saving-percent').textContent = c.percent === null ? 'No RTX 3050 baseline cost' : Math.abs(c.percent) < 0.005 ? 'Equal costs in this scenario' : `${Math.abs(c.percent).toFixed(1)}% ${c.difference >= 0 ? 'lower' : 'higher'} for the gAIn setup`;
+  $('selected-caption').textContent = `${number(state.hospitals)} hospitals`;
   $('cost-caption').textContent = state.mode === 'hardware' ? 'Hardware only · one-time cost' : `Hardware + ${state.years} ${state.years === 1 ? 'year' : 'years'} of electricity`;
-  if (state.selected.length) {
-    const names = STATES.filter(s => state.selected.includes(s[0])).map(s => s[1]);
-    const regionCosts = costs(state, sum);
-    $('scope-title').textContent = `${number(sum)} hospitals across ${state.selected.length === 16 ? 'all of Germany' : names.length > 2 ? `${names.length} selected states` : names.join(' + ')}`;
-    $('scope-description').textContent = `Dashed marker: ${money(regionCosts.quant)} quantized · ${money(regionCosts.rtx)} RTX 3050. Your chosen deployment remains ${number(state.hospitals)} hospitals.`;
-  } else {
-    $('scope-title').textContent = 'One network. A clearer perspective.';
-    $('scope-description').textContent = `${state.units} ${state.units === 1 ? 'setup' : 'setups'} per hospital${state.mode === 'total' ? ` · ${state.hours} hours/day · €${state.tariff.toFixed(3)}/kWh` : ' · hardware acquisition cost'}. Select states to add a regional benchmark.`;
-  }
   drawChart();
 }
 
 function niceMax(value) { if (value <= 0) return 100; const power = 10 ** Math.floor(Math.log10(value)); const fraction = value / power; return ([1, 2, 2.5, 4, 5, 8, 10].find(n => n >= fraction) || 10) * power; }
 function drawChart() {
   const svg = $('cost-chart');
-  const width = Math.max(600, svg.getBoundingClientRect().width || 1000), height = width > 1100 ? 460 : 430;
+  const rect = svg.getBoundingClientRect();
+  const width = Math.max(600, rect.width || 1000), height = Math.max(360, rect.height || 470);
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   const pad = { left: 75, right: 30, top: 83, bottom: 59 };
   const plotW = width - pad.left - pad.right, bottom = height - pad.bottom;
@@ -112,7 +108,7 @@ function drawChart() {
   const ceiling = niceMax(Math.max(max.quant, max.rtx) * 1.12);
   const x = n => pad.left + n / TOTAL * plotW, y = v => bottom - v / ceiling * (bottom - pad.top);
   const focusX = x(state.hospitals), qY = y(c.quant), rY = y(c.rtx), tickFont = width < 700 ? 13 : 12;
-  let out = `<title id="chart-title">Hospital deployment costs: ${number(state.hospitals)} hospitals</title><desc id="chart-desc">${state.mode === 'hardware' ? 'Hardware only' : `Hardware and ${state.years} years of electricity`}. Quantized setup ${money(c.quant)}. RTX 3050 ${money(c.rtx)}. ${state.selected.length ? `Selected states: ${sum} hospitals.` : ''} All cost inputs are illustrative assumptions.</desc><rect width="${width}" height="${height}" fill="#fff"/><text x="${pad.left}" y="20" fill="#828899" font-size="11" letter-spacing="1.2">COST (EUR)</text>`;
+  let out = `<title id="chart-title">Hospital deployment costs: ${number(state.hospitals)} hospitals</title><desc id="chart-desc">${state.mode === 'hardware' ? 'Hardware only' : `Hardware and ${state.years} years of electricity`}. gAIn setup ${money(c.quant)}. RTX 3050 ${money(c.rtx)}. ${state.selected.length ? `Selected states: ${sum} hospitals.` : ''} All cost inputs are illustrative assumptions.</desc><rect width="${width}" height="${height}" fill="#fff"/><text x="${pad.left}" y="20" fill="#828899" font-size="11" letter-spacing="1.2">COST (EUR)</text>`;
   for (let i = 0; i <= 4; i++) {
     const v = ceiling * i / 4, yy = y(v);
     out += `<line x1="${pad.left}" y1="${yy}" x2="${width - pad.right}" y2="${yy}" stroke="#e9ebf1" ${i === 0 ? '' : 'stroke-dasharray="3 5"'}/><text x="${pad.left - 13}" y="${yy + 4}" fill="#8b90a0" font-size="${tickFont}" text-anchor="end">${shortMoney(v)}</text>`;
@@ -135,7 +131,7 @@ function drawChart() {
   let qLabelY = qY - 17, rLabelY = rY - 17;
   if (Math.abs(qLabelY - rLabelY) < 39) { qLabelY = Math.min(bottom - 28, Math.max(qY, rY) - 12); rLabelY = qLabelY - 40; }
   qLabelY = Math.max(pad.top, Math.min(bottom - 27, qLabelY)); rLabelY = Math.max(pad.top, Math.min(bottom - 27, rLabelY));
-  for (const [yy, labelY, value, color, title] of [[rY, rLabelY, c.rtx, '#3c5868', 'RTX'], [qY, qLabelY, c.quant, '#7255cd', 'Q']]) {
+  for (const [yy, labelY, value, color, title] of [[rY, rLabelY, c.rtx, '#3c5868', 'RTX'], [qY, qLabelY, c.quant, '#7255cd', 'gAIn']]) {
     const text = `${title}  ${money(value)}`, badgeW = Math.max(110, text.length * 7.1 + 22);
     const badgeX = focusX + badgeW + 20 < width - 3 ? focusX + 15 : Math.max(pad.left + 5, focusX - badgeW - 15);
     out += `<circle cx="${focusX}" cy="${yy}" r="10" fill="${color}" opacity=".13"/><circle cx="${focusX}" cy="${yy}" r="5.5" fill="${color}" stroke="white" stroke-width="2.5"/><line x1="${focusX}" y1="${yy}" x2="${badgeX > focusX ? badgeX : badgeX + badgeW}" y2="${labelY + 14}" stroke="${color}" opacity=".25"/><rect x="${badgeX}" y="${labelY}" width="${badgeW}" height="28" rx="6" fill="white" stroke="${color}" stroke-opacity=".2"/><text x="${badgeX + 11}" y="${labelY + 19}" fill="${color}" font-size="12" font-weight="600">${text}</text>`;
@@ -143,7 +139,11 @@ function drawChart() {
   svg.innerHTML = out;
 }
 
-document.querySelectorAll('button[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+let previousView = view === 'controller' ? 'controller' : 'explore';
+$('presentation-button').addEventListener('click', () => {
+  if (view === 'display') setView(previousView);
+  else { previousView = view; setView('display'); if (!remoteActive) connectRoom(true); }
+});
 $('hospital-slider').addEventListener('input', e => { $('hospital-number').value = e.target.value; update({ hospitals: e.target.value }); });
 $('hospital-number').addEventListener('input', e => { if (e.target.value !== '') { update({ hospitals: e.target.value }); $('hospital-slider').value = state.hospitals; } });
 $('hospital-number').addEventListener('change', () => $('hospital-number').value = state.hospitals);
@@ -153,8 +153,9 @@ document.querySelectorAll('[data-count]').forEach(b => b.addEventListener('click
 $('cost-mode').addEventListener('change', e => update({ mode: e.target.value }));
 $('years').addEventListener('input', e => { if (e.target.value !== '') update({ years: e.target.value }); });
 $('years').addEventListener('change', () => $('years').value = state.years);
-$('state-list').addEventListener('change', () => update({ selected: [...document.querySelectorAll('.state-option input:checked')].map(el => el.value) }));
-$('select-all').addEventListener('click', () => update({ selected: STATES.map(s => s[0]) }));
+$('state-list').addEventListener('change', () => update({ selected: [...state.selected.filter(id => ['BY', 'SN'].includes(id)), ...[...document.querySelectorAll('.state-option input:checked')].map(el => el.value)] }));
+document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => { const id = b.dataset.state; update({ selected: state.selected.includes(id) ? state.selected.filter(s => s !== id) : [...state.selected, id] }); }));
+$('select-all').addEventListener('click', () => update({ selected: state.selected.length === STATES.length ? [] : STATES.map(s => s[0]) }));
 $('clear-states').addEventListener('click', () => update({ selected: [] }));
 $('use-region').addEventListener('click', () => update({ hospitals: regionTotal(state) }));
 document.querySelectorAll('.close-dialog').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
@@ -164,20 +165,8 @@ function fillAssumptions(values) { for (const input of $('assumptions-form').que
 $('assumptions-button').addEventListener('click', () => { fillAssumptions(state); $('assumptions-dialog').showModal(); });
 $('reset-assumptions').addEventListener('click', () => fillAssumptions(DEFAULTS));
 $('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast('Model assumptions updated on both screens.'); });
-$('fullscreen').addEventListener('click', async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); else toast('Fullscreen is unavailable in this browser. Use Presentation view.'); } catch { toast('Fullscreen is unavailable. Use Presentation view.'); } });
-$('download').addEventListener('click', () => {
-  const svg = $('cost-chart').cloneNode(true); const box = $('cost-chart').viewBox.baseVal;
-  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.setAttribute('width', box.width); svg.setAttribute('height', box.height + 62);
-  svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height + 62}`); svg.setAttribute('style', 'background:white;font-family:Arial,sans-serif');
-  const lines = ['gAIn hospital deployment explorer · Illustrative cost assumptions, not measured results.', `${state.mode === 'hardware' ? 'Hardware only' : `Hardware + ${state.years} years electricity`} · ${state.units} setup(s)/hospital · Q: €${state.quantHardware}, ${state.quantWatts} W · RTX: €${state.rtxHardware}, ${state.rtxWatts} W`, `${state.hours} h/day · €${state.tariff}/kWh · Hospital counts: Destatis 2024 · futurecomputing.ai`];
-  lines.forEach((line, i) => { const t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('x', '20'); t.setAttribute('y', box.height + 17 + i * 17); t.setAttribute('font-size', '11'); t.setAttribute('fill', '#6e7486'); t.textContent = line; svg.append(t); });
-  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }));
-  const a = document.createElement('a'); a.href = url; a.download = `gain-${state.hospitals}-hospitals-${state.mode}.svg`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-});
-
 function otherView() { return view === 'display' ? 'controller' : 'display'; }
 function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
-$('open-display').addEventListener('click', () => { storageSave(); window.open(roomURL('display', false), '_blank'); });
 function renderPair() {
   $('room-code').textContent = room; const url = roomURL();
   $('pair-instructions').textContent = view === 'display' ? 'Scan this code with your iPad to open the controller, or enter the room code on the iPad.' : 'Open this page on the presentation device and enter the room code, or use the link below.';
@@ -220,7 +209,6 @@ function connectRoom(asHost) {
     clearTimeout(connectTimeout);
   });
 }
-$('pair-button').addEventListener('click', () => { $('pair-dialog').showModal(); if (!remoteActive) connectRoom(true); renderPair(); });
 $('retry-pair').addEventListener('click', () => { connectRoom(host); renderPair(); });
 $('copy-link').addEventListener('click', async () => { try { await navigator.clipboard.writeText(roomURL()); toast('Link copied. Open it on the other screen.'); } catch { const input = $('join-code'); input.value = room; input.select(); toast('Clipboard unavailable. Enter the room code on the other device.'); } });
 $('join-room').addEventListener('click', () => {
@@ -236,4 +224,9 @@ window.addEventListener('pageshow', e => { if (e.persisted && remoteActive) conn
 document.addEventListener('visibilitychange', () => { if (!document.hidden && remoteActive && !remoteConnected) connectRoom(host); });
 new ResizeObserver(() => scheduleRender()).observe($('cost-chart'));
 setView(view); render();
-if (hash.get('join') === '1' && validRoom(hash.get('room'))) { connectRoom(false); renderPair(); }
+// Keep pairing out of the main interface. Existing room links connect automatically;
+// ?setup=1 opens the optional QR-code setup on the presentation device.
+if (hash.get('join') === '1' && validRoom(hash.get('room'))) connectRoom(false);
+else if (view === 'display' || params.get('setup') === '1') connectRoom(true);
+else if (view === 'controller' && validRoom(hash.get('room'))) connectRoom(false);
+if (params.get('setup') === '1') { renderPair(); $('pair-dialog').showModal(); }
