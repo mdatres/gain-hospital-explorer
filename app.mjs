@@ -102,20 +102,24 @@ function drawChart() {
   const rect = svg.getBoundingClientRect();
   const width = Math.max(600, rect.width || 1000), height = Math.max(360, rect.height || 470);
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  const pad = { left: 75, right: 30, top: 83, bottom: 59 };
+  const presentation = view === 'display';
+  const tickFont = presentation ? (width > 1400 ? 19 : 16) : 14;
+  const axisFont = presentation ? 20 : 16;
+  const pad = { left: presentation ? 125 : 100, right: 38, top: 83, bottom: 65 };
   const plotW = width - pad.left - pad.right, bottom = height - pad.bottom;
   const c = costs(state), max = costs(state, TOTAL), sum = regionTotal(state);
   const ceiling = niceMax(Math.max(max.quant, max.rtx) * 1.12);
   const x = n => pad.left + n / TOTAL * plotW, y = v => bottom - v / ceiling * (bottom - pad.top);
-  const focusX = x(state.hospitals), qY = y(c.quant), rY = y(c.rtx), tickFont = width < 700 ? 13 : 12;
-  let out = `<title id="chart-title">Hospital deployment costs: ${number(state.hospitals)} hospitals</title><desc id="chart-desc">${state.mode === 'hardware' ? 'Hardware only' : `Hardware and ${state.years} years of electricity`}. gAIn setup ${money(c.quant)}. RTX 3050 ${money(c.rtx)}. ${state.selected.length ? `Selected states: ${sum} hospitals.` : ''} All cost inputs are illustrative assumptions.</desc><rect width="${width}" height="${height}" fill="#fff"/><text x="${pad.left}" y="20" fill="#828899" font-size="11" letter-spacing="1.2">COST (EUR)</text>`;
+  const focusX = x(state.hospitals), qY = y(c.quant), rY = y(c.rtx);
+  let out = `<title id="chart-title">Hospital deployment costs: ${number(state.hospitals)} hospitals</title><desc id="chart-desc">${state.mode === 'hardware' ? 'Hardware only' : `Hardware and ${state.years} years of electricity`}. gAIn setup ${money(c.quant)}. RTX 3050 ${money(c.rtx)}. ${state.selected.length ? `Selected states: ${sum} hospitals.` : ''} All cost inputs are illustrative assumptions.</desc><rect width="${width}" height="${height}" fill="#fff"/><text x="4" y="23" fill="#000" font-size="${axisFont}" font-weight="600" letter-spacing=".4">COST (EUR)</text>`;
   for (let i = 0; i <= 4; i++) {
     const v = ceiling * i / 4, yy = y(v);
-    out += `<line x1="${pad.left}" y1="${yy}" x2="${width - pad.right}" y2="${yy}" stroke="#e9ebf1" ${i === 0 ? '' : 'stroke-dasharray="3 5"'}/><text x="${pad.left - 13}" y="${yy + 4}" fill="#8b90a0" font-size="${tickFont}" text-anchor="end">${shortMoney(v)}</text>`;
+    out += `<line x1="${pad.left}" y1="${yy}" x2="${width - pad.right}" y2="${yy}" stroke="#e9ebf1" ${i === 0 ? '' : 'stroke-dasharray="3 5"'}/><text x="${pad.left - 13}" y="${yy + tickFont * .35}" fill="#000" font-size="${tickFont}" font-weight="500" text-anchor="end">${shortMoney(v)}</text>`;
   }
+  out += `<path d="M ${pad.left} ${pad.top} V ${bottom} H ${width - pad.right}" fill="none" stroke="#000" stroke-width="${presentation ? 1.6 : 1.2}"/>`;
   const ticks = width < 700 ? [0, 500, 1000, 1500, TOTAL] : [0, 250, 500, 750, 1000, 1250, 1500, TOTAL];
-  for (const n of ticks) out += `<line x1="${x(n)}" y1="${bottom}" x2="${x(n)}" y2="${bottom + 5}" stroke="#d7dbe6"/><text x="${x(n)}" y="${bottom + 24}" text-anchor="middle" fill="#8b90a0" font-size="${tickFont}">${number(n)}</text>`;
-  out += `<text x="${pad.left + plotW / 2}" y="${height - 7}" text-anchor="middle" fill="#757c8f" font-size="12">Number of hospitals</text>`;
+  for (const n of ticks) out += `<line x1="${x(n)}" y1="${bottom}" x2="${x(n)}" y2="${bottom + 5}" stroke="#d7dbe6"/><text x="${x(n)}" y="${bottom + 28}" text-anchor="middle" fill="#000" font-size="${tickFont}" font-weight="500">${number(n)}</text>`;
+  out += `<text x="${pad.left + plotW / 2}" y="${height - 7}" text-anchor="middle" fill="#000" font-size="${axisFont}" font-weight="600">Number of hospitals</text>`;
   out += `<path d="M ${x(0)} ${bottom} L ${focusX} ${qY} L ${focusX} ${rY} Z" fill="#d7f343" opacity=".18"/>`;
   out += `<rect x="${Math.max(pad.left, focusX - 12)}" y="${pad.top - 13}" width="${Math.min(24, width - pad.right - Math.max(pad.left, focusX - 12))}" height="${bottom - pad.top + 13}" fill="#edf0f5" opacity=".65"/>`;
   out += `<path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.rtx)}" fill="none" stroke="#3c5868" stroke-width="3" stroke-linecap="round"/><path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.quant)}" fill="none" stroke="#7255cd" stroke-width="3" stroke-linecap="round"/>`;

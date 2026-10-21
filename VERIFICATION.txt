@@ -19,3 +19,10 @@ Passed: no browser errors or warnings in the checked presentation session.
 Cost formulas and published data sources are unchanged. No measured cost or
 power benchmark was supplied; all initial cost/power values remain illustrative.
 Not tested: physical iPad/Safari, projector hardware, restrictive hospital networks.
+
+Presentation readability update (21 October 2026):
+Passed: larger black axis titles and values, stronger axes and taller plot.
+Passed: removed the bottom-left footnote and Illustrative model badge.
+Passed: 1280 x 720 fit without overflow; labels remain separate with a 100-hospital
+selection and Bremen's 14-hospital regional marker near the left edge.
+Sources and model limitations remain available in Sources & methodology.
