@@ -1,7 +1,7 @@
 # gAIn hospital deployment explorer
 
-A buildless, GitHub Pages compatible website with three views: combined explorer,
-iPad controller, and presentation screen. Open [the live website](https://mdatres.github.io/gain-hospital-explorer/).
+A buildless, GitHub Pages compatible website with two screens: an iPad controller
+and a presentation screen. The home page and legacy Explore links open the controller. Open [the live website](https://mdatres.github.io/gain-hospital-explorer/).
 
 ## What is included
 
@@ -110,7 +110,10 @@ The gAIn mark is not licensed as part of those libraries.
 
 Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the large screen. Wait for **Room ready** and scan the QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
 
-The iPad shows only the deployment controls. State selections add a separate
+The iPad shows four separate control cards in order: How many hospitals?, Time
+horizon, Where?, and Include in the comparison. Charts, cost cards, and the source
+link appear only in presentation mode. The time slider remains visible but is
+disabled in hardware-only mode, where time does not affect the cost. State selections add a separate
 vertical marker; **Use this total** also sets the chosen deployment count.
 **Saving** is RTX 3050 cost minus gAIn cost, so a negative number means the gAIn
 scenario costs more. All cost inputs remain illustrative and editable.

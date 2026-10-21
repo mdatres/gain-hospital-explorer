@@ -11,7 +11,8 @@ const validRoom = value => /^[A-HJ-NP-Z2-9]{8}$/.test(value || '');
 function randomRoom() { const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return [...crypto.getRandomValues(new Uint8Array(8))].map(x => alphabet[x % alphabet.length]).join(''); }
 const params = new URLSearchParams(location.search);
 const hash = new URLSearchParams(location.hash.slice(1));
-let view = ['explore', 'controller', 'display'].includes(params.get('view')) ? params.get('view') : 'explore';
+// The main page and legacy Explore links now open the controls-only screen.
+let view = params.get('view') === 'display' ? 'display' : 'controller';
 let room = validRoom(hash.get('room')) ? hash.get('room') : randomRoom();
 let state = sanitize(DEFAULTS);
 try { state = sanitize(JSON.parse(localStorage.getItem(`gain-scenario-${room}`)) || DEFAULTS); } catch {}
@@ -73,7 +74,8 @@ function render() {
   inputValue('hospital-number', state.hospitals); inputValue('hospital-slider', state.hospitals);
   $('hospital-slider').style.background = `linear-gradient(to right,var(--purple) ${state.hospitals / TOTAL * 100}%,#e9e8f0 ${state.hospitals / TOTAL * 100}%)`;
   $('hospital-slider').setAttribute('aria-valuetext', `${number(state.hospitals)} hospitals`);
-  $('cost-mode').value = state.mode; inputValue('years', state.years); $('time-controls').hidden = state.mode === 'hardware';
+  $('cost-mode').value = state.mode; inputValue('years', state.years); $('years').disabled = state.mode === 'hardware';
+  $('time-hint').hidden = state.mode !== 'hardware';
   $('years-value').textContent = `${state.years} ${state.years === 1 ? 'year' : 'years'}`;
   $('years').setAttribute('aria-valuetext', $('years-value').textContent);
   $('years').style.background = `linear-gradient(to right,var(--purple) ${(state.years - 1) / 19 * 100}%,#e9e8f0 ${(state.years - 1) / 19 * 100}%)`;
@@ -143,7 +145,7 @@ function drawChart() {
   svg.innerHTML = out;
 }
 
-let previousView = view === 'controller' ? 'controller' : 'explore';
+let previousView = 'controller';
 $('presentation-button').addEventListener('click', () => {
   if (view === 'display') setView(previousView);
   else { previousView = view; setView('display'); if (!remoteActive) connectRoom(true); }

@@ -8,7 +8,7 @@ Passed: iPad controller shows controls only, with a 1–20 year slider.
 Passed: Bayern + Sachsen = 423; adding Berlin gives 509.
 Passed: all-Germany toggle selects 16 states / 1,841 hospitals; toggle off clears.
 Passed: More states reveals the other 14 states and keeps quick selections.
-Passed: hardware-only mode hides time controls and excludes electricity costs.
+Passed: hardware-only mode disables the time slider and excludes electricity costs.
 Passed: 1024 x 1366 controller fits with no horizontal overflow.
 Passed: 1280 x 720 presentation and cost cards fit in one viewport.
 Passed: same-browser synchronization; PeerJS connection reports connected.
@@ -26,3 +26,16 @@ Passed: removed the bottom-left footnote and Illustrative model badge.
 Passed: 1280 x 720 fit without overflow; labels remain separate with a 100-hospital
 selection and Bremen's 14-hospital regional marker near the left edge.
 Sources and model limitations remain available in Sources & methodology.
+
+Controller card update (21 October 2026):
+Passed: separate Hospital count, Time horizon, Where?, and Include in the
+comparison cards, in that order.
+Passed: legacy ?view=explore links open the controls-only controller.
+Passed: chart, costs and source link are absent from the controller view.
+Passed: 1024 x 1366 controller fits without horizontal or vertical overflow.
+Passed: hardware-only mode retains the Time horizon card with a disabled slider
+and explanation; electricity mode re-enables the slider.
+Passed: cross-origin WebRTC updates from the reorganized controller to the
+presentation; hospital and year changes propagate correctly.
+Passed: singular Source & methodology label in presentation.
+Passed: no errors or warnings in the checked controller session.
