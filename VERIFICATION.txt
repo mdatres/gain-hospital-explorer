@@ -1,56 +1,21 @@
-Simplified interface verified 21 October 2026
+Release 6 — HTTPS synchronization — 2026-10-21
 
-Passed: all eight existing model tests and JavaScript syntax check.
-Passed: gAIn setup and Saving labels; removed introductory titles, navigation,
-connection badge, download/fullscreen controls and repeated scenario banner.
-Passed: presentation toggle enters chart-only view and returns to controls.
-Passed: iPad controller shows controls only, with a 1–20 year slider.
-Passed: Bayern + Sachsen = 423; adding Berlin gives 509.
-Passed: all-Germany toggle selects 16 states / 1,841 hospitals; toggle off clears.
-Passed: More states reveals the other 14 states and keeps quick selections.
-Passed: hardware-only mode disables the time slider and excludes electricity costs.
-Passed: 1024 x 1366 controller fits with no horizontal overflow.
-Passed: 1280 x 720 presentation and cost cards fit in one viewport.
-Passed: same-browser synchronization; PeerJS connection reports connected.
-Passed: real cross-origin WebRTC synchronization (localhost to 127.0.0.1),
-including time-horizon and hospital-slider changes.
-Passed: no browser errors or warnings in the checked presentation session.
+Automated checks: 17 passed (8 model + 9 synchronization).
+Covers room isolation, acknowledgements, duplicate/out-of-order updates,
+independent field changes, lost responses, in-flight slider edits, reload recovery,
+expiry, request validation, and the unchanged cost model.
 
-Cost formulas and published data sources are unchanged. No measured cost or
-power benchmark was supplied; all initial cost/power values remain illustrative.
-Not tested: physical iPad/Safari, projector hardware, restrictive hospital networks.
+Public Cloudflare Worker: gain-hospital-sync.datresmassimiliano.workers.dev
+Deployed version 168b02ea. DB binding created and both tables initialized.
+Public HTTP check passed: 100 hospitals, 4 years, Bayern, hardware-only,
+acknowledged by display; duplicate update ignored; GitHub CORS preflight allowed.
 
-Presentation readability update (21 October 2026):
-Passed: larger black axis titles and values, stronger axes and taller plot.
-Passed: removed the bottom-left footnote and Illustrative model badge.
-Passed: 1280 x 720 fit without overflow; labels remain separate with a 100-hospital
-selection and Bremen's 14-hospital regional marker near the left edge.
-Sources and model limitations remain available in Sources & methodology.
+Browser check: localhost controller and 127.0.0.1 display used separate origins
+and the public Cloudflare service. Controller changed 100 to 400 hospitals,
+hardware-only to electricity, Bayern to Bayern+Sachsen (423), and years 4 to 5.
+Display showed 400 hospitals, 423 regional marker, 5 years, EUR126280 / EUR527760.
+No BroadcastChannel, storage events, or PeerJS were involved.
 
-Controller card update (21 October 2026):
-Passed: separate Hospital count, Time horizon, Where?, and Include in the
-comparison cards, in that order.
-Passed: legacy ?view=explore links open the controls-only controller.
-Passed: chart, costs and source link are absent from the controller view.
-Passed: 1024 x 1366 controller fits without horizontal or vertical overflow.
-Passed: hardware-only mode retains the Time horizon card with a disabled slider
-and explanation; electricity mode re-enables the slider.
-Passed: cross-origin WebRTC updates from the reorganized controller to the
-presentation; hospital and year changes propagate correctly.
-Passed: singular Source & methodology label in presentation.
-Passed: no errors or warnings in the checked controller session.
-
-Synchronization update (21 October 2026):
-Passed: eight delivery tests plus eight existing model tests.
-Covered: JSON-text transport, explicit confirmation, dropped state delivery,
-dropped acknowledgement, duplicate delivery, old acknowledgement after a newer
-slider change, stalled connections, legacy message decoding, malformed input,
-and shutdown.
-Physical iPad confirmation is pending the user's retest after publication.
-Passed: new raw text connection across localhost and 127.0.0.1 with confirmation
-on both screens; hospital count, state and time changes reached the display.
-Passed: after closing the host, a controller change to 400 survived the outage
-and was applied when the host reopened and the connection recovered.
-No errors in the fresh final host session. Earlier serializer-selection error
-in the development session was resolved before publication (PeerJS 1.5.5 uses
-'raw', not 'none', as its serializer option).
+Physical iPad: the prior WebRTC releases failed. The new HTTPS release still
+requires a fresh-QR check on the user's physical iPad. Do not interpret browser
+or backend checks as proof of that physical device/network result.

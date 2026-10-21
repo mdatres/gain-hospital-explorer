@@ -14,7 +14,7 @@ and a presentation screen. The home page and legacy Explore links open the contr
 - A single Presentation mode button and a large, uncluttered chart.
 - Time-horizon slider (1–20 years), with Bayern / Sachsen / All Germany shortcuts
   and the other 14 states under More states.
-- Local same-browser synchronization and cross-device PeerJS/WebRTC pairing.
+- Cross-device HTTPS synchronization through a Cloudflare Worker and D1 database.
 - Source and methodology panel; no analytics and no patient data.
 
 ## Data provenance
@@ -54,7 +54,7 @@ hospital; 8 h/day, 3 years, €0.30/kWh; 400 hospitals. These yield €115,768 a
 
 Change permanent defaults in `model.mjs`. In-page edits are stored per room in
 the browser and sent to connected screens. A fresh unpaired page starts a new
-scenario. Room codes are temporary and stop working when the host closes.
+scenario. Room codes expire after six hours without activity. Keep both screens online during a presentation.
 
 ## Hosting
 
@@ -68,28 +68,36 @@ static filenames also work through GitHub's default branch publishing.
 
 ## Pairing and availability
 
-- For first-time pairing, open `?view=display&setup=1` on the large screen, wait
-  for Room ready, and scan the QR on the iPad. Close the setup dialog to present.
-- The main interface has no connection controls or status badge. Existing room
-  links reconnect automatically. Presentation mode switches the current window
-  to the large chart; Exit presentation returns to its controls.
-- The URL fragment carries only an ephemeral room code, not cost inputs.
-- [PeerJS](https://peerjs.com/client/getting-started) 1.5.5 uses the public
-  PeerServer Cloud for signalling. Scenario data is exchanged over WebRTC.
-- Connection status and retry controls remain in the optional setup dialog. Keep
-  both tabs awake. “Retry connection” restarts failed pairing. Rejoining gets the
-  host's current scenario.
-- Restrictive NAT/firewalls can prevent WebRTC connections. No managed TURN
-  service, availability SLA or guaranteed institutional-network connectivity is
-  included. Configure your own PeerServer and TURN server in `connectRoom()` for
-  an installation requiring guaranteed connectivity; do not publish permanent
-  private TURN credentials in a public repository.
-- Same-browser tabs synchronize using BroadcastChannel, with storage events as
-  fallback. This also works while remote signalling is unavailable.
-- Anyone who has the room code can join the scenario. Do not use it for sensitive
-  data. There is no patient-data field, backend database or analytics.
-- Fonts are requested from Google Fonts; system sans-serif fonts are the fallback.
-  The logo and JavaScript libraries are bundled locally.
+1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the computer.
+2. Scan its fresh QR code with the iPad and leave the resulting Safari page open.
+3. The iPad opens the controller in the same 16-character room. Pick 100 hospitals; the computer should update within a few seconds.
+4. Close the setup dialog on the computer to show the chart.
+
+Existing 8-character PeerJS rooms are retired. Start once with a fresh QR code
+after this release. Saved new room links reconnect automatically.
+
+Both screens use HTTPS requests to the public Cloudflare service configured in
+`connection-config.mjs`. No direct WebRTC connection, TURN server, or local-only
+messaging is used. Rooms store only the scenario settings and temporary device
+presence. The random room link grants access to its scenario; do not use it for
+sensitive data. Only a hash of the room code is stored in D1. Inactive rooms expire
+after six hours and are removed on subsequent service requests.
+
+The service confirms an update only after the other screen has read that
+revision. Network failures retain the latest choices for retry, including across
+reloads. Concurrent changes are applied by field, and repeated requests cannot
+apply the same change twice. Keep both tabs awake and online. Cloudflare free-tier
+daily usage limits apply; no paid upgrade is required for this deployment.
+
+The deployed Worker is `gain-hospital-sync`; its D1 binding must be named `DB`.
+`cloudflare-worker.mjs` is the self-contained deployment artifact and
+`cloudflare-schema.sql` creates its two tables. The service URL is
+https://gain-hospital-sync.datresmassimiliano.workers.dev/api/sync.
+The endpoint permits this GitHub origin, its own origin, and local development.
+Never add Cloudflare account credentials to the static website or repository.
+
+Fonts are requested from Google Fonts; system fonts are the fallback.
+The logo and QR-code generator are bundled locally.
 
 ## Development and verification
 
@@ -103,12 +111,12 @@ validation. See `VERIFICATION.txt` for the browser checks completed for delivery
 
 ## Third-party components
 
-PeerJS 1.5.5 and qrcode-generator 1.4.4 are bundled with their licenses at the repository root.
+qrcode-generator 1.4.4 is bundled with its license at the repository root. Legacy PeerJS files may remain in the repository but are no longer loaded.
 The gAIn mark is not licensed as part of those libraries.
 
 ## Using the live site
 
-Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the large screen. Wait for **Room ready** and scan the QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
+Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
 
 The iPad shows four separate control cards in order: How many hospitals?, Time
 horizon, Where?, and Include in the comparison. Charts, cost cards, and the source
@@ -122,12 +130,13 @@ The static files are kept at the repository root for browser-based uploads. The 
 
 ## Delivery checks
 
-Scenario messages use JSON text over PeerJS's raw data channel. Both screens
-exchange ping/pong messages; the connection is confirmed only after a reply.
-Each state update has an acknowledgement and is retried if it is not confirmed.
-Duplicate state messages are acknowledged without being applied twice. A stale
-connection is reopened automatically, and a temporary reconnect notice appears
-only when updates are unconfirmed. Same-browser messaging failures do not block
-the independent device connection. Refresh both devices after this update.
+The model has eight unit checks. The separate backend test suite covers room
+isolation, confirmed delivery, duplicate and reordered writes, simultaneous
+field changes, lost responses, rapid slider changes, reload recovery, expiry,
+and invalid requests. Browser checks use independent origins so local browser
+storage cannot disguise a broken device connection.
 
-Run `node --test model.test.mjs sync.test.mjs` for the model and delivery tests.
+The public Cloudflare service is tested for real HTTP delivery, acknowledgement,
+GitHub CORS, and duplicate update handling. Physical iPad verification is recorded
+separately in `VERIFICATION.txt`; automated browser success is not a claim that a
+particular iPad/network has been tested.
