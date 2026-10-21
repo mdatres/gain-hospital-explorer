@@ -1,4 +1,5 @@
 import { STATES, TOTAL, DEFAULTS, sanitize, costs, regionTotal } from './model.mjs';
+import { createDelivery } from './sync.mjs';
 
 const $ = id => document.getElementById(id);
 const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -16,16 +17,25 @@ let view = params.get('view') === 'display' ? 'display' : 'controller';
 let room = validRoom(hash.get('room')) ? hash.get('room') : randomRoom();
 let state = sanitize(DEFAULTS);
 try { state = sanitize(JSON.parse(localStorage.getItem(`gain-scenario-${room}`)) || DEFAULTS); } catch {}
-let channel, peer, connections = new Set(), host = false, remoteActive = false, remoteConnected = false;
+let channel, peer, deliveries = new Map(), connections = new Set(), host = false, remoteActive = false, remoteConnected = false;
 let generation = 0, reconnectTimer, connectTimeout, toastTimer, renderFrame = 0;
 let lastLocalSeen = 0, peerStateMessage = 'Not connected';
+let unsentEdits = {}, lastLocalPacketId = null;
 const tabId = crypto.randomUUID();
 const seenUpdates = new Set();
 function remember(id) { seenUpdates.add(id); if (seenUpdates.size > 300) seenUpdates.delete(seenUpdates.values().next().value); }
 function statePacket() { const packet = { type: 'state', id: crypto.randomUUID(), state }; remember(packet.id); return packet; }
 function acceptState(packet, viaLocal = false, except) {
   if (!packet || packet.type !== 'state' || typeof packet.id !== 'string' || packet.id.length > 80 || seenUpdates.has(packet.id)) return;
-  remember(packet.id); state = sanitize(packet.state); storageSave(); scheduleRender();
+  remember(packet.id);
+  // Preserve controller choices made during an outage, and apply only those
+  // fields over the host's fresh snapshot when the connection resumes.
+  if (!host && Object.keys(unsentEdits).length) {
+    state = sanitize({ ...sanitize(packet.state), ...unsentEdits }); storageSave(); scheduleRender();
+    const retry = statePacket(); lastLocalPacketId = retry.id; postLocal('state', retry); sendRemote(retry); return;
+  }
+  if (host) { unsentEdits = {}; lastLocalPacketId = null; }
+  state = sanitize(packet.state); storageSave(); scheduleRender();
   const safe = { type: 'state', id: packet.id, state };
   if (!viaLocal) postLocal('state', safe);
   sendRemote(safe, except);
@@ -35,14 +45,19 @@ $('state-list').innerHTML = STATES.filter(([id]) => !['BY', 'SN'].includes(id)).
 
 function toast(message) { clearTimeout(toastTimer); $('toast').textContent = message; $('toast').hidden = false; toastTimer = setTimeout(() => $('toast').hidden = true, 4300); }
 function storageSave() { try { localStorage.setItem(`gain-scenario-${room}`, JSON.stringify(state)); } catch {} }
-function postLocal(type, payload = {}) { channel?.postMessage({ type, ...payload, tabId }); }
+function postLocal(type, payload = {}) { try { channel?.postMessage({ type, ...payload, tabId }); } catch {} }
 function refreshStatus() {
-  $('pair-status').textContent = remoteConnected ? 'Connected. Changes update the other screen live.' : peerStateMessage;
+  const statuses = [...deliveries.values()].map(link => link.status());
+  remoteConnected = statuses.some(status => status.confirmed);
+  const stalled = statuses.some(status => status.stalled);
+  $('pair-status').textContent = remoteConnected && !stalled ? 'Connected. Updates are confirmed by the other screen.' : peerStateMessage;
+  $('sync-warning').hidden = !(stalled || (remoteActive && !remoteConnected && /retry|unavailable|not found|not responding/i.test(peerStateMessage)));
+  $('sync-warning-text').textContent = stalled ? 'Your latest change is not confirmed yet. Retrying…' : peerStateMessage;
 }
 function startLocalChannel() {
   channel?.close();
   if ('BroadcastChannel' in window) {
-    channel = new BroadcastChannel(`gain-hospitals-${room}`);
+    try { channel = new BroadcastChannel(`gain-hospitals-${room}`); } catch { channel = null; return; }
     channel.onmessage = ({ data }) => {
       if (!data || data.tabId === tabId) return;
       lastLocalSeen = Date.now();
@@ -55,10 +70,10 @@ function startLocalChannel() {
 }
 window.addEventListener('storage', event => { if (event.key === `gain-scenario-${room}` && event.newValue) { try { state = sanitize(JSON.parse(event.newValue)); lastLocalSeen = Date.now(); scheduleRender(); refreshStatus(); } catch {} } });
 startLocalChannel();
-setInterval(() => { postLocal('heartbeat'); refreshStatus(); }, 2000);
+setInterval(() => { postLocal('heartbeat'); for (const link of deliveries.values()) link.pulse(); refreshStatus(); }, 1000);
 
-function sendRemote(message, except) { for (const conn of connections) if (conn !== except && conn.open) { try { conn.send(message); } catch {} } }
-function update(changes) { state = sanitize({ ...state, ...changes }); storageSave(); scheduleRender(); const packet = statePacket(); postLocal('state', packet); sendRemote(packet); }
+function sendRemote(message, except) { for (const conn of connections) if (conn !== except) deliveries.get(conn)?.sendState(message); }
+function update(changes) { state = sanitize({ ...state, ...changes }); unsentEdits = { ...unsentEdits, ...changes }; storageSave(); scheduleRender(); const packet = statePacket(); lastLocalPacketId = packet.id; postLocal('state', packet); sendRemote(packet); }
 function scheduleRender() { if (!renderFrame) renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); }); }
 function setView(next) {
   view = next; document.body.dataset.view = view;
@@ -170,7 +185,7 @@ $('references-button').addEventListener('click', () => $('references-dialog').sh
 function fillAssumptions(values) { for (const input of $('assumptions-form').querySelectorAll('input[name]')) input.value = values[input.name]; }
 $('assumptions-button').addEventListener('click', () => { fillAssumptions(state); $('assumptions-dialog').showModal(); });
 $('reset-assumptions').addEventListener('click', () => fillAssumptions(DEFAULTS));
-$('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast('Model assumptions updated on both screens.'); });
+$('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast(remoteActive ? 'Model assumptions updated. Sending to the other screen…' : 'Model assumptions updated.'); });
 function otherView() { return view === 'display' ? 'controller' : 'display'; }
 function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
 function renderPair() {
@@ -183,28 +198,57 @@ function renderPair() {
 function peerMessage(message) { peerStateMessage = message; refreshStatus(); }
 function stopRemote() {
   generation++; clearTimeout(reconnectTimer); clearTimeout(connectTimeout);
+  for (const link of deliveries.values()) link.close(); deliveries.clear();
   for (const conn of connections) conn.close(); connections.clear();
   peer?.destroy(); peer = null; remoteConnected = false;
 }
 function wireConnection(conn, token) {
   connections.add(conn);
-  conn.on('open', () => { if (token !== generation) return; clearTimeout(connectTimeout); remoteConnected = true; refreshStatus(); if (host) conn.send(statePacket()); });
-  conn.on('data', data => { if (token === generation) acceptState(data, false, conn); });
-  conn.on('close', () => { connections.delete(conn); if (token !== generation) return; remoteConnected = [...connections].some(c => c.open); if (!remoteConnected) { peerMessage('Connection lost · retrying'); if (!host) { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => connectRoom(false), 3500); } else peerMessage('Waiting for the other screen'); } });
-  conn.on('error', () => { if (token !== generation) return; connections.delete(conn); remoteConnected = [...connections].some(c => c.open); if (!remoteConnected) peerMessage('Connection interrupted · use Retry connection'); });
+  const link = createDelivery({
+    connection: conn,
+    onState: packet => { if (token === generation) acceptState(packet, false, conn); },
+    onStatus: () => { if (token === generation) refreshStatus(); },
+    onAcknowledged: packet => { if (token === generation && packet.id === lastLocalPacketId) { unsentEdits = {}; lastLocalPacketId = null; } },
+    onFailure: () => { if (token === generation) { peerMessage('The other screen is not responding · retrying'); conn.close(); } }
+  });
+  deliveries.set(conn, link);
+  conn.on('open', () => {
+    if (token !== generation) return;
+    clearTimeout(connectTimeout); peerMessage('Checking that updates reach the other screen…'); link.open();
+    if (host) { const snapshot = statePacket(); if (Object.keys(unsentEdits).length) lastLocalPacketId = snapshot.id; link.sendState(snapshot); }
+  });
+  conn.on('data', data => { if (token === generation) link.receive(data); });
+  conn.on('close', () => {
+    link.close(); deliveries.delete(conn); connections.delete(conn);
+    if (token !== generation) return;
+    refreshStatus();
+    if (!remoteConnected) {
+      peerMessage(host ? 'Waiting for the iPad to reconnect…' : 'Connection lost · retrying');
+      if (!host) { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => connectRoom(false), 3500); }
+    }
+  });
+  conn.on('error', () => {
+    if (token !== generation) return;
+    peerMessage('Connection interrupted · retrying'); conn.close();
+    if (!host) { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => connectRoom(false), 3500); }
+  });
 }
 function connectRoom(asHost) {
   stopRemote(); host = asHost; remoteActive = true;
   if (!window.Peer) { peerMessage('Connection library unavailable'); return; }
   const token = generation; peerMessage(asHost ? 'Starting room…' : 'Connecting to room…');
-  const options = { debug: 0 };
+  const options = { debug: 1 };
   try { peer = asHost ? new window.Peer(`gain-hospital-v1-${room}`, options) : new window.Peer(options); }
   catch { peerMessage('This browser cannot create a peer connection'); return; }
-  connectTimeout = setTimeout(() => { if (token === generation && !remoteConnected) peerMessage(host ? 'Room ready · waiting for another screen' : 'Not connected · check the room or retry'); }, 20000);
+  connectTimeout = setTimeout(() => {
+    if (token !== generation || remoteConnected) return;
+    peerMessage(host && peer?.open ? 'Room ready · waiting for another screen' : 'Connection not responding · retrying');
+    if (!host) reconnectTimer = setTimeout(() => connectRoom(false), 3500);
+  }, 20000);
   peer.on('open', () => {
     if (token !== generation) return;
     if (host) { clearTimeout(connectTimeout); peerMessage('Room ready · scan or enter the code'); }
-    else wireConnection(peer.connect(`gain-hospital-v1-${room}`, { reliable: true, serialization: 'json' }), token);
+    else wireConnection(peer.connect(`gain-hospital-v1-${room}`, { reliable: true, serialization: 'raw' }), token);
   });
   peer.on('connection', conn => { if (token === generation) wireConnection(conn, token); });
   peer.on('disconnected', () => { if (token !== generation) return; if (!remoteConnected) peerMessage('Signalling interrupted · reconnecting'); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 2500); });
@@ -213,8 +257,10 @@ function connectRoom(asHost) {
     if (error.type === 'unavailable-id' && host) { connectRoom(false); return; }
     if (!remoteConnected) peerMessage(error.type === 'peer-unavailable' ? 'Room not found · keep the host screen open' : 'Connection unavailable · check network and retry');
     clearTimeout(connectTimeout);
+    if (!host) { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => connectRoom(false), 3500); }
   });
 }
+$('retry-sync').addEventListener('click', () => connectRoom(host));
 $('retry-pair').addEventListener('click', () => { connectRoom(host); renderPair(); });
 $('copy-link').addEventListener('click', async () => { try { await navigator.clipboard.writeText(roomURL()); toast('Link copied. Open it on the other screen.'); } catch { const input = $('join-code'); input.value = room; input.select(); toast('Clipboard unavailable. Enter the room code on the other device.'); } });
 $('join-room').addEventListener('click', () => {

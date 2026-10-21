@@ -119,3 +119,15 @@ vertical marker; **Use this total** also sets the chosen deployment count.
 scenario costs more. All cost inputs remain illustrative and editable.
 
 The static files are kept at the repository root for browser-based uploads. The logo, favicon and bundled libraries are adjacent to `index.html`; no build or installation is needed.
+
+## Delivery checks
+
+Scenario messages use JSON text over PeerJS's raw data channel. Both screens
+exchange ping/pong messages; the connection is confirmed only after a reply.
+Each state update has an acknowledgement and is retried if it is not confirmed.
+Duplicate state messages are acknowledged without being applied twice. A stale
+connection is reopened automatically, and a temporary reconnect notice appears
+only when updates are unconfirmed. Same-browser messaging failures do not block
+the independent device connection. Refresh both devices after this update.
+
+Run `node --test model.test.mjs sync.test.mjs` for the model and delivery tests.

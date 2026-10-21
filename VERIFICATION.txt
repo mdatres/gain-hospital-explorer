@@ -39,3 +39,18 @@ Passed: cross-origin WebRTC updates from the reorganized controller to the
 presentation; hospital and year changes propagate correctly.
 Passed: singular Source & methodology label in presentation.
 Passed: no errors or warnings in the checked controller session.
+
+Synchronization update (21 October 2026):
+Passed: eight delivery tests plus eight existing model tests.
+Covered: JSON-text transport, explicit confirmation, dropped state delivery,
+dropped acknowledgement, duplicate delivery, old acknowledgement after a newer
+slider change, stalled connections, legacy message decoding, malformed input,
+and shutdown.
+Physical iPad confirmation is pending the user's retest after publication.
+Passed: new raw text connection across localhost and 127.0.0.1 with confirmation
+on both screens; hospital count, state and time changes reached the display.
+Passed: after closing the host, a controller change to 400 survived the outage
+and was applied when the host reopened and the connection recovered.
+No errors in the fresh final host session. Earlier serializer-selection error
+in the development session was resolved before publication (PeerJS 1.5.5 uses
+'raw', not 'none', as its serializer option).

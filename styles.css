@@ -28,3 +28,5 @@ body[data-view=controller] .number-input{margin:20px 0}
 body[data-view=controller] .number-input input{font-size:78px}
 @media(max-width:800px){.controls>.control-card{padding:25px 28px}}
 @media(max-width:500px){.controls>.control-card{padding:22px}body[data-view=controller] .controls{gap:14px}.control-card h1,.control-card h2{font-size:22px}body[data-view=controller] .number-input input{font-size:66px}.control-card .time-label output{font-size:14px}}
+
+.sync-warning{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);width:max-content;z-index:9;display:flex;align-items:center;gap:18px;padding:13px 18px;border:1px solid #e9c58e;border-radius:12px;background:#fff5e5;color:#6e430e;font-size:12px;box-shadow:0 8px 24px #0001}.sync-warning button{font-weight:600;text-decoration:underline;min-height:30px;white-space:nowrap}
