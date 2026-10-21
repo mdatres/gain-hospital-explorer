@@ -68,7 +68,7 @@ static filenames also work through GitHub's default branch publishing.
 
 ## Pairing and availability
 
-1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the computer.
+1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.1) on the computer.
 2. Scan its fresh QR code with the iPad and leave the resulting Safari page open.
 3. The iPad opens the controller in the same 16-character room. Pick 100 hospitals; the computer should update within a few seconds.
 4. Close the setup dialog on the computer to show the chart.
@@ -116,7 +116,7 @@ The gAIn mark is not licensed as part of those libraries.
 
 ## Using the live site
 
-Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
+Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.1) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
 
 The iPad shows four separate control cards in order: How many hospitals?, Time
 horizon, Where?, and Include in the comparison. Charts, cost cards, and the source
