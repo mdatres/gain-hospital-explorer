@@ -234,5 +234,7 @@ setView(view); render();
 // ?setup=1 opens the optional QR-code setup on the presentation device.
 if (hash.get('join') === '1' && validRoom(hash.get('room'))) connectRoom(false);
 else if (view === 'display' || params.get('setup') === '1') connectRoom(true);
-else if (view === 'controller' && validRoom(hash.get('room'))) connectRoom(false);
+// A saved controller URL without join=1 may be the room's original host.
+// Claim its room again; unavailable-id already falls back to joining a live host.
+else if (view === 'controller' && validRoom(hash.get('room'))) connectRoom(true);
 if (params.get('setup') === '1') { renderPair(); $('pair-dialog').showModal(); }
