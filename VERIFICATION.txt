@@ -16,6 +16,10 @@ hardware-only to electricity, Bayern to Bayern+Sachsen (423), and years 4 to 5.
 Display showed 400 hospitals, 423 regional marker, 5 years, EUR126280 / EUR527760.
 No BroadcastChannel, storage events, or PeerJS were involved.
 
-Physical iPad: the prior WebRTC releases failed. The new HTTPS release still
-requires a fresh-QR check on the user's physical iPad. Do not interpret browser
-or backend checks as proof of that physical device/network result.
+Physical iPad: CONFIRMED on 2026-10-21. The user opened the new controller
+link in Safari and tapped 100. The independently observed public GitHub
+presentation changed from 400 to 100 hospitals through Cloudflare, showing
+EUR28,942 gAIn / EUR109,164 RTX 3050 / EUR80,222 saving for the default
+three-year example. No agent controller was open in that room.
+
+Final public HTML confirmed app.mjs?v=6.1 after Pages run 39602780676 succeeded.
