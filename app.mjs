@@ -143,7 +143,7 @@ $('assumptions-button').addEventListener('click', () => { fillAssumptions(state)
 $('reset-assumptions').addEventListener('click', () => fillAssumptions(DEFAULTS));
 $('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast(remoteActive ? 'Model assumptions updated. Sending to the other screen…' : 'Model assumptions updated.'); });
 function otherView() { return view === 'display' ? 'controller' : 'display'; }
-function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
+function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.searchParams.set('release', '6.1'); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
 function renderPair() {
   $('room-code').textContent = room.match(/.{4}/g).join(' '); const url = roomURL();
   $('pair-instructions').textContent = view === 'display' ? 'Scan this code with your iPad to open the controller, or enter the room code on the iPad.' : 'Open this page on the presentation device and enter the room code, or use the link below.';
