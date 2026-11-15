@@ -6,10 +6,10 @@
   <meta name="description" content="Explore hospital deployment costs for the gAIn setup and RTX 3050. An interactive, two-screen gAIn scenario explorer.">
   <title>gAIn — Hospital deployment explorer</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./styles.css?v=6.2">
   
   <script defer src="./qrcode.min.js"></script>
-  <script type="module" src="./app.mjs?v=6.1"></script>
+  <script type="module" src="./app.mjs?v=6.2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -47,7 +47,7 @@
           <div class="chart-caption"><span><i class="selected-line"></i><strong id="selected-caption">400 hospitals</strong> · your scenario</span><span id="cost-caption">Hardware + 3 years of electricity</span></div>
         </div>
         <div class="metrics" aria-live="polite" aria-atomic="true">
-          <article class="metric quant-metric"><span class="metric-label"><i class="metric-dot quant"></i>gAIn setup</span><strong id="quant-cost">€115,768</strong><span id="quant-per">€289 per hospital</span></article>
+          <article class="metric quant-metric"><span class="metric-label"><img class="metric-logo" src="./gain-logo.svg" alt="gAIn — Next generation AI Computing"></span><strong id="quant-cost">€115,768</strong><span id="quant-per">€289 per hospital</span></article>
           <article class="metric rtx-metric"><span class="metric-label"><i class="metric-dot rtx"></i>RTX 3050 setup</span><strong id="rtx-cost">€436,656</strong><span id="rtx-per">€1,092 per hospital</span></article>
           <article class="metric savings-metric"><span class="metric-label">Saving</span><strong id="saving-cost">€320,888</strong><span id="saving-percent">73.5% lower in this scenario</span></article>
         </div>

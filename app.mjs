@@ -1,5 +1,5 @@
 import { STATES, TOTAL, DEFAULTS, sanitize, costs, regionTotal } from './model.mjs';
-import { createRoomClient } from './room-sync.mjs?v=6';
+import { createRoomClient } from './room-sync.mjs?v=6.2';
 import { SYNC_ENDPOINT } from './connection-config.mjs?v=6';
 
 const $ = id => document.getElementById(id);
@@ -43,13 +43,13 @@ function inputValue(id, value) { if (document.activeElement !== $(id)) $(id).val
 function render() {
   const c = costs(state), per = costs(state, 1), sum = regionTotal(state);
   inputValue('hospital-number', state.hospitals); inputValue('hospital-slider', state.hospitals);
-  $('hospital-slider').style.background = `linear-gradient(to right,var(--purple) ${state.hospitals / TOTAL * 100}%,#e9e8f0 ${state.hospitals / TOTAL * 100}%)`;
+  $('hospital-slider').style.background = `linear-gradient(to right,var(--quant) ${state.hospitals / TOTAL * 100}%,#e9e8f0 ${state.hospitals / TOTAL * 100}%)`;
   $('hospital-slider').setAttribute('aria-valuetext', `${number(state.hospitals)} hospitals`);
   $('cost-mode').value = state.mode; inputValue('years', state.years); $('years').disabled = state.mode === 'hardware';
   $('time-hint').hidden = state.mode !== 'hardware';
   $('years-value').textContent = `${state.years} ${state.years === 1 ? 'year' : 'years'}`;
   $('years').setAttribute('aria-valuetext', $('years-value').textContent);
-  $('years').style.background = `linear-gradient(to right,var(--purple) ${(state.years - 1) / 19 * 100}%,#e9e8f0 ${(state.years - 1) / 19 * 100}%)`;
+  $('years').style.background = `linear-gradient(to right,var(--quant) ${(state.years - 1) / 19 * 100}%,#e9e8f0 ${(state.years - 1) / 19 * 100}%)`;
   document.querySelectorAll('[data-state]').forEach(b => b.setAttribute('aria-pressed', String(state.selected.includes(b.dataset.state))));
   $('select-all').setAttribute('aria-pressed', String(state.selected.length === STATES.length));
   $('region-summary').hidden = !state.selected.length;
@@ -66,7 +66,7 @@ function render() {
   $('saving-percent').textContent = c.percent === null ? 'No RTX 3050 baseline cost' : Math.abs(c.percent) < 0.005 ? 'Equal costs in this scenario' : `${Math.abs(c.percent).toFixed(1)}% ${c.difference >= 0 ? 'lower' : 'higher'} for the gAIn setup`;
   $('selected-caption').textContent = `${number(state.hospitals)} hospitals`;
   $('cost-caption').textContent = state.mode === 'hardware' ? 'Hardware only · one-time cost' : `Hardware + ${state.years} ${state.years === 1 ? 'year' : 'years'} of electricity`;
-  drawChart();
+  if (view === 'display') drawChart();
 }
 
 function niceMax(value) { if (value <= 0) return 100; const power = 10 ** Math.floor(Math.log10(value)); const fraction = value / power; return ([1, 2, 2.5, 4, 5, 8, 10].find(n => n >= fraction) || 10) * power; }
@@ -95,8 +95,8 @@ function drawChart() {
   out += `<text x="${pad.left + plotW / 2}" y="${height - 7}" text-anchor="middle" fill="#000" font-size="${axisFont}" font-weight="600">Number of hospitals</text>`;
   out += `<path d="M ${x(0)} ${bottom} L ${focusX} ${qY} L ${focusX} ${rY} Z" fill="#d7f343" opacity=".18"/>`;
   out += `<rect x="${Math.max(pad.left, focusX - 12)}" y="${pad.top - 13}" width="${Math.min(24, width - pad.right - Math.max(pad.left, focusX - 12))}" height="${bottom - pad.top + 13}" fill="#edf0f5" opacity=".65"/>`;
-  out += `<path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.rtx)}" fill="none" stroke="#3c5868" stroke-width="3" stroke-linecap="round"/><path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.quant)}" fill="none" stroke="#7255cd" stroke-width="3" stroke-linecap="round"/>`;
-  for (const [yy, color] of [[qY, '#7255cd'], [rY, '#3c5868']]) out += `<line x1="${pad.left}" y1="${yy}" x2="${focusX}" y2="${yy}" stroke="${color}" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>`;
+  out += `<path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.rtx)}" fill="none" stroke="#3c5868" stroke-width="3" stroke-linecap="round"/><path d="M ${x(0)} ${bottom} L ${x(TOTAL)} ${y(max.quant)}" fill="none" stroke="var(--quant)" stroke-width="4" stroke-linecap="round"/>`;
+  for (const [yy, color] of [[qY, 'var(--quant)'], [rY, '#3c5868']]) out += `<line x1="${pad.left}" y1="${yy}" x2="${focusX}" y2="${yy}" stroke="${color}" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>`;
   out += `<line x1="${focusX}" y1="${pad.top - 14}" x2="${focusX}" y2="${bottom}" stroke="#343b4a" stroke-width="1.3"/>`;
   const focusLabelX = Math.max(pad.left + 83, Math.min(width - pad.right - 83, focusX));
   out += `<rect x="${focusLabelX - 82}" y="34" width="164" height="29" rx="7" fill="#252a38"/><text x="${focusLabelX}" y="53" text-anchor="middle" fill="white" font-weight="550" font-size="12">${number(state.hospitals)} hospitals · selected</text>`;
@@ -108,10 +108,10 @@ function drawChart() {
   let qLabelY = qY - 17, rLabelY = rY - 17;
   if (Math.abs(qLabelY - rLabelY) < 39) { qLabelY = Math.min(bottom - 28, Math.max(qY, rY) - 12); rLabelY = qLabelY - 40; }
   qLabelY = Math.max(pad.top, Math.min(bottom - 27, qLabelY)); rLabelY = Math.max(pad.top, Math.min(bottom - 27, rLabelY));
-  for (const [yy, labelY, value, color, title] of [[rY, rLabelY, c.rtx, '#3c5868', 'RTX'], [qY, qLabelY, c.quant, '#7255cd', 'gAIn']]) {
+  for (const [yy, labelY, value, color, title] of [[rY, rLabelY, c.rtx, '#3c5868', 'RTX'], [qY, qLabelY, c.quant, 'var(--quant)', 'gAIn']]) {
     const text = `${title}  ${money(value)}`, badgeW = Math.max(110, text.length * 7.1 + 22);
     const badgeX = focusX + badgeW + 20 < width - 3 ? focusX + 15 : Math.max(pad.left + 5, focusX - badgeW - 15);
-    out += `<circle cx="${focusX}" cy="${yy}" r="10" fill="${color}" opacity=".13"/><circle cx="${focusX}" cy="${yy}" r="5.5" fill="${color}" stroke="white" stroke-width="2.5"/><line x1="${focusX}" y1="${yy}" x2="${badgeX > focusX ? badgeX : badgeX + badgeW}" y2="${labelY + 14}" stroke="${color}" opacity=".25"/><rect x="${badgeX}" y="${labelY}" width="${badgeW}" height="28" rx="6" fill="white" stroke="${color}" stroke-opacity=".2"/><text x="${badgeX + 11}" y="${labelY + 19}" fill="${color}" font-size="12" font-weight="600">${text}</text>`;
+    out += `<circle cx="${focusX}" cy="${yy}" r="10" fill="${color}" opacity=".13"/><circle cx="${focusX}" cy="${yy}" r="5.5" fill="${color}" stroke="white" stroke-width="2.5"/><line x1="${focusX}" y1="${yy}" x2="${badgeX > focusX ? badgeX : badgeX + badgeW}" y2="${labelY + 14}" stroke="${color}" opacity=".25"/><rect x="${badgeX}" y="${labelY}" width="${badgeW}" height="28" rx="6" fill="white" stroke="${color}" stroke-opacity=".2"/><text x="${badgeX + 11}" y="${labelY + 19}" fill="${title === 'gAIn' ? '#155c20' : color}" font-size="12" font-weight="600">${text}</text>`;
   }
   svg.innerHTML = out;
 }
@@ -143,7 +143,7 @@ $('assumptions-button').addEventListener('click', () => { fillAssumptions(state)
 $('reset-assumptions').addEventListener('click', () => fillAssumptions(DEFAULTS));
 $('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast(remoteActive ? 'Model assumptions updated. Sending to the other screen…' : 'Model assumptions updated.'); });
 function otherView() { return view === 'display' ? 'controller' : 'display'; }
-function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.searchParams.set('release', '6.1'); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
+function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.searchParams.set('release', '6.2'); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
 function renderPair() {
   $('room-code').textContent = room.match(/.{4}/g).join(' '); const url = roomURL();
   $('pair-instructions').textContent = view === 'display' ? 'Scan this code with your iPad to open the controller, or enter the room code on the iPad.' : 'Open this page on the presentation device and enter the room code, or use the link below.';
@@ -160,7 +160,10 @@ function connectRoom() {
   roomClient = createRoomClient({
     room, endpoint: SYNC_ENDPOINT, getState: () => state, getRole: () => view, saved,
     save: outbox => { try { sessionStorage.setItem(outboxKey, JSON.stringify(outbox)); } catch {} },
-    onState: remote => { state = remote; storageSave(); scheduleRender(); },
+    onState: remote => {
+      if (JSON.stringify(remote) === JSON.stringify(state)) return;
+      state = remote; storageSave(); scheduleRender();
+    },
     onStatus: status => { peerStateMessage = status.message; refreshStatus(status); },
   });
   roomClient.start();

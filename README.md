@@ -6,7 +6,8 @@ and a presentation screen. The home page and legacy Explore links open the contr
 ## What is included
 
 - Official gAIn logo, responsive layouts and touch controls.
-- Hospital-count slider and numeric input from 0 to 1,841.
+- Logo-green gAIn chart series and cost amount, with the logo in the gAIn cost card.
+- Logo-green hospital-count and time-horizon sliders. Hospital counts range from 0 to 1,841.
 - gAIn versus RTX 3050 setup cost curves, intersection labels, and projections to the axes.
 - Hardware-only and hardware-plus-electricity modes.
 - All 16 German states, with a separate sum marker and an explicit “Use this total” action.
@@ -68,7 +69,7 @@ static filenames also work through GitHub's default branch publishing.
 
 ## Pairing and availability
 
-1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.1) on the computer.
+1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.2) on the computer.
 2. Scan its fresh QR code with the iPad and leave the resulting Safari page open.
 3. The iPad opens the controller in the same 16-character room. Pick 100 hospitals; the computer should update within a few seconds.
 4. Close the setup dialog on the computer to show the chart.
@@ -82,6 +83,13 @@ messaging is used. Rooms store only the scenario settings and temporary device
 presence. The random room link grants access to its scenario; do not use it for
 sensitive data. Only a hash of the room code is stored in D1. Inactive rooms expire
 after six hours and are removed on subsequent service requests.
+
+The paired presentation checks for changes every 250 ms, plus network/request
+time. Continuous slider drags send the newest value every 40 ms when no request
+is in flight; edits made during a request are sent as soon as it finishes. Idle
+controllers and unpaired screens keep the one-second interval. This uses more
+service requests while presenting, so the existing free-tier daily limits still
+apply. Refresh both screens after an update to load the latest client.
 
 The service confirms an update only after the other screen has read that
 revision. Network failures retain the latest choices for retry, including across
@@ -103,7 +111,7 @@ The logo and QR-code generator are bundled locally.
 
 Serve with `python3 -m http.server 8765`; open `http://localhost:8765/`.
 Use `?view=controller` or `?view=display` for a dedicated view.
-Module syntax checks and `node --test model.test.mjs` require Node.js.
+Module syntax checks and `node --test model.test.mjs room-sync.test.mjs sync.test.mjs` require Node.js.
 
 The model tests cover state-count reconciliation, energy conversion, hardware-only
 mode, zero deployment, zero energy, setup/year scaling, cost reversals, and input
@@ -116,7 +124,7 @@ The gAIn mark is not licensed as part of those libraries.
 
 ## Using the live site
 
-Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.1) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
+Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.2) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
 
 The iPad shows four separate control cards in order: How many hospitals?, Time
 horizon, Where?, and Include in the comparison. Charts, cost cards, and the source
@@ -130,7 +138,11 @@ The static files are kept at the repository root for browser-based uploads. The 
 
 ## Delivery checks
 
-The model has eight unit checks. The separate backend test suite covers room
+The current checked-in suites contain 25 tests: eight model tests, nine HTTPS
+room-client tests, and eight legacy delivery tests. The room-client tests cover
+continuous dragging, polling intervals, confirmation, in-flight edits, lost
+responses, reload recovery, and cancellation. The separate backend test suite
+recorded for release 6 covers room
 isolation, confirmed delivery, duplicate and reordered writes, simultaneous
 field changes, lost responses, rapid slider changes, reload recovery, expiry,
 and invalid requests. Browser checks use independent origins so local browser

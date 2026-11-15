@@ -1,3 +1,24 @@
+Release 6.2 - Brand green and faster controller delivery - 2026-11-15
+
+25 checked-in tests passed: 8 model, 9 HTTPS room-client, 8 legacy delivery.
+App module syntax check passed.
+Timing tests verify a continuous drag sends within 40 ms, paired presentation
+polling at 250 ms, one-second idle/unpaired polling, acknowledgement handling,
+in-flight edits, retry sequence preservation, reload recovery, and cancellation.
+
+Visual browser check: gAIn line, markers, legend and large cost use #00ff00,
+the green endpoint in gain-logo.svg. The bundled logo appears in the gAIn card,
+without the word setup. Both controller slider fills and thumbs use the same green.
+Small chart label text remains dark green for readability.
+
+Two separate browser origins (localhost controller and 127.0.0.1 presentation)
+connected through the existing public Cloudflare service. A change from 400 to
+100 hospitals was visible on the presentation within a 276 ms observation window.
+This is one browser observation, not a latency guarantee or a physical iPad test.
+No backend deployment or schema change is required.
+
+Previous release verification follows unchanged.
+
 Release 6 — HTTPS synchronization — 2026-10-21
 
 Automated checks: 17 passed (8 model + 9 synchronization).
