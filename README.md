@@ -10,7 +10,7 @@ and a presentation screen. The home page and legacy Explore links open the contr
 - Logo-green hospital-count and time-horizon sliders. Hospital counts range from 0 to 1,841.
 - gAIn versus RTX 3050 setup cost curves, intersection labels, and projections to the axes.
 - Hardware-only and hardware-plus-electricity modes.
-- All 16 German states, with a separate sum marker and an explicit “Use this total” action.
+- All 16 German states: selecting or deselecting states automatically sets the hospital count to their combined total.
 - Editable hardware, average power, usage hours, energy price, years and setups per hospital.
 - A single Presentation mode button and a large, uncluttered chart.
 - Time-horizon slider (1–20 years), with Bayern / Sachsen / All Germany shortcuts
@@ -69,7 +69,7 @@ static filenames also work through GitHub's default branch publishing.
 
 ## Pairing and availability
 
-1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.2) on the computer.
+1. Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.4) on the computer.
 2. Scan its fresh QR code with the iPad and leave the resulting Safari page open.
 3. The iPad opens the controller in the same 16-character room. Pick 100 hospitals; the computer should update within a few seconds.
 4. Close the setup dialog on the computer to show the chart.
@@ -124,13 +124,16 @@ The gAIn mark is not licensed as part of those libraries.
 
 ## Using the live site
 
-Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.2) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
+Open the [presentation setup](https://mdatres.github.io/gain-hospital-explorer/?view=display&setup=1&release=6.4) on the large screen. Scan the fresh QR code with the iPad. The iPad opens the controller and joins that room. Close the setup dialog and keep both pages open. Saved paired URLs also reconnect automatically; no Connect screens button is needed.
 
 The iPad shows four separate control cards in order: How many hospitals?, Time
 horizon, Where?, and Include in the comparison. Charts, cost cards, and the source
 link appear only in presentation mode. The time slider remains visible but is
-disabled in hardware-only mode, where time does not affect the cost. State selections add a separate
-vertical marker; **Use this total** also sets the chosen deployment count.
+disabled in hardware-only mode, where time does not affect the cost. State selections automatically set the deployment count and slider to their
+combined total, and add a vertical marker on the chart. This works for Bayern,
+Sachsen, all states under More states, and All Germany. Clearing the selection
+sets the hospital count to zero. The hospital slider can still be adjusted
+manually; **Use this total** restores the selected states’ total after a manual edit.
 **Saving** is RTX 3050 cost minus gAIn cost, so a negative number means the gAIn
 scenario costs more. All cost inputs remain illustrative and editable.
 

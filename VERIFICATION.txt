@@ -1,3 +1,14 @@
+2026-11-16 — release 6.4: selecting states sets the hospital count
+- Selecting Bayern sets both the numeric input and slider to 347.
+- Adding Sachsen sets both to 423; removing Bayern leaves 76.
+- Selecting Berlin under More states alongside Sachsen sets 162.
+- All Germany sets 1,841; clearing the selection sets 0.
+- Separate localhost / 127.0.0.1 origins confirmed the presentation receives
+  Bayern, Bayern+Sachsen, deselection, clearing, and All Germany through Cloudflare.
+  A brief connection interruption recovered automatically and delivered the latest choice.
+- Existing model and room-client suites: 17 passed; module syntax passed.
+- Existing green styling and faster synchronization are preserved.
+
 Release 6.2 - Brand green and faster controller delivery - 2026-11-15
 
 25 checked-in tests passed: 8 model, 9 HTTPS room-client, 8 legacy delivery.

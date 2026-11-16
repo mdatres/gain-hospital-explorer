@@ -30,6 +30,7 @@ function refreshStatus(status = {}) {
   $('sync-warning-text').textContent = peerStateMessage;
 }
 function update(changes) { state = sanitize({ ...state, ...changes }); storageSave(); scheduleRender(); roomClient?.edit(changes); }
+function updateStates(selected) { update({ selected, hospitals: regionTotal({ selected }) }); }
 function scheduleRender() { if (!renderFrame) renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); }); }
 function setView(next) {
   view = next; document.body.dataset.view = view;
@@ -130,10 +131,10 @@ document.querySelectorAll('[data-count]').forEach(b => b.addEventListener('click
 $('cost-mode').addEventListener('change', e => update({ mode: e.target.value }));
 $('years').addEventListener('input', e => { if (e.target.value !== '') update({ years: e.target.value }); });
 $('years').addEventListener('change', () => $('years').value = state.years);
-$('state-list').addEventListener('change', () => update({ selected: [...state.selected.filter(id => ['BY', 'SN'].includes(id)), ...[...document.querySelectorAll('.state-option input:checked')].map(el => el.value)] }));
-document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => { const id = b.dataset.state; update({ selected: state.selected.includes(id) ? state.selected.filter(s => s !== id) : [...state.selected, id] }); }));
-$('select-all').addEventListener('click', () => update({ selected: state.selected.length === STATES.length ? [] : STATES.map(s => s[0]) }));
-$('clear-states').addEventListener('click', () => update({ selected: [] }));
+$('state-list').addEventListener('change', () => updateStates([...state.selected.filter(id => ['BY', 'SN'].includes(id)), ...[...document.querySelectorAll('.state-option input:checked')].map(el => el.value)]));
+document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => { const id = b.dataset.state; updateStates(state.selected.includes(id) ? state.selected.filter(s => s !== id) : [...state.selected, id]); }));
+$('select-all').addEventListener('click', () => updateStates(state.selected.length === STATES.length ? [] : STATES.map(s => s[0])));
+$('clear-states').addEventListener('click', () => updateStates([]));
 $('use-region').addEventListener('click', () => update({ hospitals: regionTotal(state) }));
 document.querySelectorAll('.close-dialog').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', e => { const r = dialog.getBoundingClientRect(); if (e.target === dialog && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dialog.close(); }));
@@ -143,7 +144,7 @@ $('assumptions-button').addEventListener('click', () => { fillAssumptions(state)
 $('reset-assumptions').addEventListener('click', () => fillAssumptions(DEFAULTS));
 $('assumptions-form').addEventListener('submit', e => { e.preventDefault(); if (!$('assumptions-form').reportValidity()) return; const values = Object.fromEntries(new FormData(e.currentTarget)); update(values); $('assumptions-dialog').close(); toast(remoteActive ? 'Model assumptions updated. Sending to the other screen…' : 'Model assumptions updated.'); });
 function otherView() { return view === 'display' ? 'controller' : 'display'; }
-function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.searchParams.set('release', '6.2'); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
+function roomURL(targetView = otherView(), remote = true) { const u = new URL(location.href); u.search = ''; u.searchParams.set('view', targetView); u.searchParams.set('release', '6.4'); u.hash = `room=${room}&${remote ? 'join=1' : 'local=1'}`; return u.href; }
 function renderPair() {
   $('room-code').textContent = room.match(/.{4}/g).join(' '); const url = roomURL();
   $('pair-instructions').textContent = view === 'display' ? 'Scan this code with your iPad to open the controller, or enter the room code on the iPad.' : 'Open this page on the presentation device and enter the room code, or use the link below.';
